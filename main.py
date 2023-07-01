@@ -13,6 +13,7 @@ def get_books(url):
 
 def check_for_redirect(response):
     if response.status_code == 302:
+        print('СРАБОТАЛО')
         raise requests.HTTPError
 
 
@@ -24,7 +25,7 @@ def get_book_name(book_id):
     soup = BeautifulSoup(response.text, 'lxml')
     title_tag = soup.find('h1')
     title_text = title_tag.text.split('   ::   ')
-    return title_text[0], title_text[1]
+    return title_text
 
 
 def download_txt(url, filename, folder='books/'):
@@ -49,13 +50,13 @@ def download_txt(url, filename, folder='books/'):
 if __name__ == "__main__":
     books_folder_name = 'books'
     url = 'https://tululu.org/'
-
-    for i in range(1, 2):
-        book_url = f'{url}/txt.php?id={i}'
+    i = 1
+    for book_id in range(1, 11):
+        book_url = f'{url}/txt.php?id={book_id}'
         try:
-            book_name = get_book_name(i)[0]
-            print(book_name)
+            book_name = f'{i}. {get_book_name(book_id)[0]}'
             download_txt(book_url, book_name)
         except requests.HTTPError:
-            print("Книга отсутствует с id ==", i)
+            print("Книга отсутствует с id ==", book_id)
             continue
+        i += 1
