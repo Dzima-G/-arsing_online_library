@@ -83,6 +83,7 @@ def createParser():
     parser.add_argument('--end_id', default=5, nargs='?', type=int, help="Введите второе значение интервала")
     return parser
 
+
 if __name__ == "__main__":
     parser = createParser()
     namespace = parser.parse_args(sys.argv[1:])
