@@ -2,6 +2,8 @@ import requests
 import os
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filepath, sanitize_filename
+import argparse
+import sys
 
 
 def get_books(url):
@@ -11,7 +13,7 @@ def get_books(url):
     return response.text
 
 
-def get_book_name(url):
+def parse_book_page(url):
     response = requests.get(url, allow_redirects=False)
     response.raise_for_status()
     check_for_redirect(response)
@@ -75,15 +77,23 @@ def download_image(url, folder='images/'):
         file.write(response.content)
 
 
+def createParser():
+    parser = argparse.ArgumentParser(description='Введите интервал через пробел для скачивания книг')
+    parser.add_argument('first_count', default=1, nargs='?', type=int, help="Введите первое значение интервала")
+    parser.add_argument('last_count', default=2, nargs='?', type=int, help="Введите второе значение интервала")
+    return parser
+
 if __name__ == "__main__":
+    parser = createParser()
+    namespace = parser.parse_args(sys.argv[1:])
     books_folder_name = 'books'
     url = 'https://tululu.org/'
     i = 1
-    for book_id in range(1, 11):
+    for book_id in range(namespace.first_count, namespace.last_count + 1):
         book_url = f'{url}/txt.php?id={book_id}'
         page_url = f'{url}/b{book_id}/'
         try:
-            book_poster = get_book_name(page_url)
+            book_poster = parse_book_page(page_url)
             book_name = f'{i}. {book_poster[0]}'
             download_txt(book_url, book_name)
             download_image(book_poster[2])
