@@ -27,6 +27,15 @@ def get_book_name(url):
             comment_text = comment_tag[0].text
             comments_list.append(comment_text)
     page_data.append(comments_list)
+    genres_tag = soup.find('span', class_='d_book')
+    genres_tag = genres_tag.find_all('a')
+    genres_list = []
+    if len(genres_tag) > 0:
+        for item_genre in genres_tag:
+            genre_text = item_genre.text
+            genres_list.append(genre_text)
+    page_data.append(genres_list)
+
     return page_data
 
 
@@ -81,5 +90,5 @@ if __name__ == "__main__":
         except requests.HTTPError:
             # print("Книга отсутствует с id ==", book_id)
             continue
-        print(f'Заголовок:{book_name}', book_poster[2], '', sep='\n', end='\n')
+        print(f'Заголовок:{book_name}', book_poster[2], book_poster[3], book_poster[4], '', sep='\n', end='\n')
         i += 1
