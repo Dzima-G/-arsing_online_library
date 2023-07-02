@@ -79,8 +79,8 @@ def download_image(url, folder='images/'):
 
 def createParser():
     parser = argparse.ArgumentParser(description='Введите интервал через пробел для скачивания книг')
-    parser.add_argument('first_count', default=1, nargs='?', type=int, help="Введите первое значение интервала")
-    parser.add_argument('last_count', default=2, nargs='?', type=int, help="Введите второе значение интервала")
+    parser.add_argument('--start_id', default=1, nargs='?', type=int, help="Введите первое значение интервала")
+    parser.add_argument('--end_id', default=5, nargs='?', type=int, help="Введите второе значение интервала")
     return parser
 
 if __name__ == "__main__":
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     books_folder_name = 'books'
     url = 'https://tululu.org/'
     i = 1
-    for book_id in range(namespace.first_count, namespace.last_count + 1):
+    for book_id in range(namespace.start_id, namespace.end_id + 1):
         book_url = f'{url}/txt.php?id={book_id}'
         page_url = f'{url}/b{book_id}/'
         try:
@@ -98,7 +98,13 @@ if __name__ == "__main__":
             download_txt(book_url, book_name)
             download_image(book_poster[2])
         except requests.HTTPError:
-            # print("Книга отсутствует с id ==", book_id)
             continue
-        print(f'Заголовок:{book_name}', book_poster[2], book_poster[3], book_poster[4], '', sep='\n', end='\n')
+
+        print(f'{i} Название:', book_poster[0])
+        print(f'  Автор:', book_poster[1])
+        print(f'  Ссылка на обложку книги:', book_poster[2])
+        if len(book_poster[3]) > 0:
+            print(f'  Комментарии:', *book_poster[3])
+        print(f'  Жанр книги:', *book_poster[4])
+        print('')
         i += 1
