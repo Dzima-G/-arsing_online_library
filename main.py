@@ -11,22 +11,28 @@ def get_books(url):
     return response.text
 
 
-def check_for_redirect(response):
-    if response.status_code == 302:
-        raise requests.HTTPError
-    if len(response.history) == 2:
-        raise requests.HTTPError
-
-
 def get_book_name(url):
-    response = requests.get(url)
+    response = requests.get(url, allow_redirects=False)
     response.raise_for_status()
     check_for_redirect(response)
     soup = BeautifulSoup(response.text, 'lxml')
+    page_data = soup.find('h1').text.split('   ::   ')
     image_url = f"https://tululu.org/{soup.find('div', class_='bookimage').find('img')['src']}"
-    title_text = soup.find('h1').text.split('   ::   ')
-    title_text.append(image_url)
-    return title_text
+    page_data.append(image_url)
+    comments_tag = soup.find_all('div', class_='texts')
+    comments_list = []
+    if len(comments_tag) > 0:
+        for item_comment in comments_tag:
+            comment_tag = item_comment.find_all('span')
+            comment_text = comment_tag[0].text
+            comments_list.append(comment_text)
+    page_data.append(comments_list)
+    return page_data
+
+
+def check_for_redirect(response):
+    if response.status_code == 302:
+        raise requests.HTTPError
 
 
 def download_txt(url, filename, folder='books/'):
@@ -66,7 +72,7 @@ if __name__ == "__main__":
     i = 1
     for book_id in range(1, 11):
         book_url = f'{url}/txt.php?id={book_id}'
-        page_url = f'{url}/b{book_id}'
+        page_url = f'{url}/b{book_id}/'
         try:
             book_poster = get_book_name(page_url)
             book_name = f'{i}. {book_poster[0]}'
