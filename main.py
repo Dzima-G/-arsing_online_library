@@ -77,7 +77,7 @@ def download_image(url, folder='images/'):
         file.write(response.content)
 
 
-def createParser():
+def createparser():
     parser = argparse.ArgumentParser(description='Введите интервал через пробел для скачивания книг')
     parser.add_argument('--start_id', default=1, nargs='?', type=int, help="Введите первое значение интервала")
     parser.add_argument('--end_id', default=5, nargs='?', type=int, help="Введите второе значение интервала")
@@ -85,7 +85,7 @@ def createParser():
 
 
 if __name__ == "__main__":
-    parser = createParser()
+    parser = createparser()
     namespace = parser.parse_args(sys.argv[1:])
     books_folder_name = 'books'
     url = 'https://tululu.org/'
