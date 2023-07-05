@@ -4,10 +4,12 @@ from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filepath, sanitize_filename
 import argparse
 import sys
+from urllib.parse import urlsplit, urlunsplit
 
 
-def get_books(url):
-    response = requests.get(url, allow_redirects=False)
+def get_books(url, book_id):
+    payload = {'id': book_id}
+    response = requests.get(url, params=payload, allow_redirects=False)
     response.raise_for_status()
     check_for_redirect(response)
     return response.text
@@ -55,7 +57,11 @@ def download_txt(url, filename, folder='books/'):
     Returns:
         str: Путь до файла, куда сохранён текст.
     """
-    book_data = get_books(url)
+    book_id = urlsplit(url).path.strip('/')[1:]
+    url_parts = list(urlsplit(url))
+    url_parts[2] = 'txt.php'
+    book_url = urlunsplit(url_parts)
+    book_data = get_books(book_url, book_id)
     filename = sanitize_filename(f'{filename}.txt')
     fpath = sanitize_filepath(folder)
     os.makedirs(fpath, exist_ok=True)
@@ -86,7 +92,8 @@ def createparser():
 Для скачивания необходимо указать параметры:
 --start_id - первое значение интервала (id книги)
 --end_id - последнее значение интервала (id книги)'''))
-    parser.add_argument('--start_id', default=1, nargs='?', type=int, help='Введите первое значение интервала (id книги)')
+    parser.add_argument('--start_id', default=1, nargs='?', type=int,
+                        help='Введите первое значение интервала (id книги)')
     parser.add_argument('--end_id', default=5, nargs='?', type=int, help="Введите второе значение интервала (id книги)")
     return parser
 
@@ -98,12 +105,11 @@ if __name__ == "__main__":
     url = 'https://tululu.org/'
     sequence_number = 1
     for book_id in range(args.start_id, args.end_id + 1):
-        book_url = f'{url}/txt.php?id={book_id}'
-        page_url = f'{url}/b{book_id}/'
+        page_url = f'{url}b{book_id}/'
         try:
             book_poster = parse_book_page(page_url)
             book_name = f'{sequence_number}. {book_poster[0]}'
-            download_txt(book_url, book_name)
+            download_txt(page_url, book_name)
             download_image(book_poster[2])
         except requests.HTTPError:
             continue
