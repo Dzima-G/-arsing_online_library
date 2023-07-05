@@ -9,14 +9,14 @@ from urllib.parse import urlsplit, urlunsplit
 
 def get_books(url, book_id):
     payload = {'id': book_id}
-    response = requests.get(url, params=payload, allow_redirects=False)
+    response = requests.get(url, params=payload)
     response.raise_for_status()
     check_for_redirect(response)
     return response.text
 
 
 def parse_book_page(url):
-    response = requests.get(url, allow_redirects=False)
+    response = requests.get(url)
     response.raise_for_status()
     check_for_redirect(response)
     return response
@@ -48,7 +48,7 @@ def get_page_data(response):
 
 
 def check_for_redirect(response):
-    if response.status_code == 302:
+    if len(response.history) > 0:
         raise requests.HTTPError
 
 
@@ -98,7 +98,8 @@ def createparser():
 --end_id - последнее значение интервала (id книги)'''))
     parser.add_argument('--start_id', default=1, nargs='?', type=int,
                         help='Введите первое значение интервала (id книги)')
-    parser.add_argument('--end_id', default=5, nargs='?', type=int, help="Введите второе значение интервала (id книги)")
+    parser.add_argument('--end_id', default=11, nargs='?', type=int,
+                        help="Введите второе значение интервала (id книги)")
     return parser
 
 
@@ -116,13 +117,11 @@ if __name__ == "__main__":
             continue
         book_poster = get_page_data(book_page_data)
         book_name = f'{sequence_number}. {book_poster[0]}'
-        download_txt(page_url, book_name)
         try:
             download_txt(page_url, book_name)
             download_image(book_poster[2])
         except requests.HTTPError:
             continue
-
 
         print(f'{sequence_number} Название:', book_poster[0])
         print(f'  Автор:', book_poster[1])
