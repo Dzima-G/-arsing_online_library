@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filepath, sanitize_filename
 import argparse
 import sys
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urlsplit, urlunsplit, urljoin
 
 
 def get_books(url, book_id):
@@ -25,7 +25,7 @@ def parse_book_page(url):
 def get_page_data(response):
     soup = BeautifulSoup(response.text, 'lxml')
     page_data = soup.find('h1').text.split('   ::   ')
-    image_url = f"https://tululu.org/{soup.find('div', class_='bookimage').find('img')['src']}"
+    image_url = urljoin('https://tululu.org/', soup.find('div', class_='bookimage').find('img')['src'])
     page_data.append(image_url)
     comments_tag = soup.find_all('div', class_='texts')
     comments_list = []
