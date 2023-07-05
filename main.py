@@ -24,9 +24,9 @@ def parse_book_page(url):
 
 def get_page_data(response):
     soup = BeautifulSoup(response.text, 'lxml')
-    page_data = soup.find('h1').text.split('   ::   ')
+    book_description = soup.find('h1').text.split('   ::   ')
     image_url = urljoin('https://tululu.org/', soup.find('div', class_='bookimage').find('img')['src'])
-    page_data.append(image_url)
+    book_description.append(image_url)
     comments_tag = soup.find_all('div', class_='texts')
     comments_list = []
     if len(comments_tag) > 0:
@@ -34,7 +34,7 @@ def get_page_data(response):
             comment_tag = item_comment.find_all('span')
             comment_text = comment_tag[0].text
             comments_list.append(comment_text)
-    page_data.append(comments_list)
+    book_description.append(comments_list)
     genres_tag = soup.find('span', class_='d_book')
     genres_tag = genres_tag.find_all('a')
     genres_list = []
@@ -42,9 +42,9 @@ def get_page_data(response):
         for item_genre in genres_tag:
             genre_text = item_genre.text
             genres_list.append(genre_text)
-    page_data.append(genres_list)
+    book_description.append(genres_list)
 
-    return page_data
+    return book_description
 
 
 def check_for_redirect(response):
@@ -65,13 +65,13 @@ def download_txt(url, filename, folder='books/'):
     url_parts = list(urlsplit(url))
     url_parts[2] = 'txt.php'
     book_url = urlunsplit(url_parts)
-    book_data = get_books(book_url, book_id)
+    book_text = get_books(book_url, book_id)
     filename = sanitize_filename(f'{filename}.txt')
     fpath = sanitize_filepath(folder)
     os.makedirs(fpath, exist_ok=True)
     file_path = os.path.join(fpath, filename)
     with open(file_path, 'w') as file:
-        file.write(book_data)
+        file.write(book_text)
     return file_path
 
 
