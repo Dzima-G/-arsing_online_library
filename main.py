@@ -19,6 +19,10 @@ def parse_book_page(url):
     response = requests.get(url, allow_redirects=False)
     response.raise_for_status()
     check_for_redirect(response)
+    return response
+
+
+def get_page_data(response):
     soup = BeautifulSoup(response.text, 'lxml')
     page_data = soup.find('h1').text.split('   ::   ')
     image_url = f"https://tululu.org/{soup.find('div', class_='bookimage').find('img')['src']}"
@@ -107,12 +111,18 @@ if __name__ == "__main__":
     for book_id in range(args.start_id, args.end_id + 1):
         page_url = f'{url}b{book_id}/'
         try:
-            book_poster = parse_book_page(page_url)
-            book_name = f'{sequence_number}. {book_poster[0]}'
+            book_page_data = parse_book_page(page_url)
+        except requests.HTTPError:
+            continue
+        book_poster = get_page_data(book_page_data)
+        book_name = f'{sequence_number}. {book_poster[0]}'
+        download_txt(page_url, book_name)
+        try:
             download_txt(page_url, book_name)
             download_image(book_poster[2])
         except requests.HTTPError:
             continue
+
 
         print(f'{sequence_number} Название:', book_poster[0])
         print(f'  Автор:', book_poster[1])
