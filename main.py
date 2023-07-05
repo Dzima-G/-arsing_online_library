@@ -93,26 +93,26 @@ def createparser():
 
 if __name__ == "__main__":
     parser = createparser()
-    namespace = parser.parse_args(sys.argv[1:])
+    args = parser.parse_args(sys.argv[1:])
     books_folder_name = 'books'
     url = 'https://tululu.org/'
-    i = 1
-    for book_id in range(namespace.start_id, namespace.end_id + 1):
+    sequence_number = 1
+    for book_id in range(args.start_id, args.end_id + 1):
         book_url = f'{url}/txt.php?id={book_id}'
         page_url = f'{url}/b{book_id}/'
         try:
             book_poster = parse_book_page(page_url)
-            book_name = f'{i}. {book_poster[0]}'
+            book_name = f'{sequence_number}. {book_poster[0]}'
             download_txt(book_url, book_name)
             download_image(book_poster[2])
         except requests.HTTPError:
             continue
 
-        print(f'{i} Название:', book_poster[0])
+        print(f'{sequence_number} Название:', book_poster[0])
         print(f'  Автор:', book_poster[1])
         print(f'  Ссылка на обложку книги:', book_poster[2])
         if len(book_poster[3]) > 0:
             print(f'  Комментарии:', *book_poster[3])
         print(f'  Жанр книги:', *book_poster[4])
         print('')
-        i += 1
+        sequence_number += 1
