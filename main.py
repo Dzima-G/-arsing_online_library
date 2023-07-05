@@ -28,28 +28,29 @@ def get_page_data(response):
     image_url = urljoin('https://tululu.org/', soup.find('div', class_='bookimage').find('img')['src'])
     book_description.append(image_url)
     comments_tag = soup.find_all('div', class_='texts')
-    comments_list = []
-    if len(comments_tag) > 0:
+    book_comments = []
+    if comments_tag:
         for item_comment in comments_tag:
             comment_tag = item_comment.find_all('span')
             comment_text = comment_tag[0].text
-            comments_list.append(comment_text)
-    book_description.append(comments_list)
+            book_comments.append(comment_text)
+    book_description.append(book_comments)
     genres_tag = soup.find('span', class_='d_book')
     genres_tag = genres_tag.find_all('a')
-    genres_list = []
-    if len(genres_tag) > 0:
+    book_genre = []
+    if genres_tag:
         for item_genre in genres_tag:
             genre_text = item_genre.text
-            genres_list.append(genre_text)
-    book_description.append(genres_list)
+            book_genre.append(genre_text)
+    book_description.append(book_genre)
 
     return book_description
 
 
 def check_for_redirect(response):
-    if len(response.history) > 0:
+    if response.history:
         raise requests.HTTPError
+
 
 
 def download_txt(url, filename, folder='books/'):
@@ -126,7 +127,8 @@ if __name__ == "__main__":
         print(f'{sequence_number} Название:', book_poster[0])
         print(f'  Автор:', book_poster[1])
         print(f'  Ссылка на обложку книги:', book_poster[2])
-        if len(book_poster[3]) > 0:
+
+        if book_poster[3]:
             print(f'  Комментарии:', *book_poster[3])
         print(f'  Жанр книги:', *book_poster[4])
         print('')
