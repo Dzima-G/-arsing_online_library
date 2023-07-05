@@ -24,9 +24,8 @@ def parse_book_page(url):
 
 def get_page_data(response):
     soup = BeautifulSoup(response.text, 'lxml')
-    book_description = soup.find('h1').text.split('   ::   ')
-    image_url = urljoin('https://tululu.org/', soup.find('div', class_='bookimage').find('img')['src'])
-    book_description.append(image_url)
+    book_title, book_author = [i.strip() for i in (soup.find('h1').text.split('   ::   '))]
+    book_image_url = urljoin('https://tululu.org/', soup.find('div', class_='bookimage').find('img')['src'])
     comments_tag = soup.find_all('div', class_='texts')
     book_comments = []
     if comments_tag:
@@ -34,7 +33,6 @@ def get_page_data(response):
             comment_tag = item_comment.find_all('span')
             comment_text = comment_tag[0].text
             book_comments.append(comment_text)
-    book_description.append(book_comments)
     genres_tag = soup.find('span', class_='d_book')
     genres_tag = genres_tag.find_all('a')
     book_genre = []
@@ -42,15 +40,19 @@ def get_page_data(response):
         for item_genre in genres_tag:
             genre_text = item_genre.text
             book_genre.append(genre_text)
-    book_description.append(book_genre)
 
-    return book_description
+    return {
+        'book_title': book_title,
+        'book_author': book_author,
+        'book_image_url': book_image_url,
+        'book_comments': book_comments,
+        'book_genre': book_genre
+    }
 
 
 def check_for_redirect(response):
     if response.history:
         raise requests.HTTPError
-
 
 
 def download_txt(url, filename, folder='books/'):
@@ -117,19 +119,19 @@ if __name__ == "__main__":
         except requests.HTTPError:
             continue
         book_poster = get_page_data(book_page_data)
-        book_name = f'{sequence_number}. {book_poster[0]}'
+        book_name = f'{sequence_number}. {book_poster["book_title"]}'
         try:
             download_txt(page_url, book_name)
-            download_image(book_poster[2])
+            download_image(book_poster['book_image_url'])
         except requests.HTTPError:
             continue
 
-        print(f'{sequence_number} Название:', book_poster[0])
-        print(f'  Автор:', book_poster[1])
-        print(f'  Ссылка на обложку книги:', book_poster[2])
+        print(f'{sequence_number} Название:', book_poster['book_title'])
+        print(f'  Автор:', book_poster['book_author'])
+        print(f'  Ссылка на обложку книги:', book_poster['book_image_url'])
 
-        if book_poster[3]:
-            print(f'  Комментарии:', *book_poster[3])
-        print(f'  Жанр книги:', *book_poster[4])
+        if book_poster['book_comments']:
+            print(f'  Комментарии:', *book_poster['book_comments'])
+        print(f'  Жанр книги:', *book_poster['book_genre'])
         print('')
         sequence_number += 1
