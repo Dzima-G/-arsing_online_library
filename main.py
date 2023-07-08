@@ -5,20 +5,32 @@ from pathvalidate import sanitize_filepath, sanitize_filename
 import argparse
 import sys
 from urllib.parse import urlsplit, urlunsplit, urljoin
+import logging
+import time
+
+
+class DownloadBookError(requests.HTTPError):
+    """Если нет ссылки на скачивание"""
+    pass
+
+
+class PageBookError(requests.HTTPError):
+    """Если отсутствует страница"""
+    pass
 
 
 def get_books(url, book_id):
     payload = {'id': book_id}
     response = requests.get(url, params=payload)
     response.raise_for_status()
-    check_for_redirect(response)
+    check_for_redirect(response, DownloadBookError)
     return response.text
 
 
 def parse_book_page(url):
     response = requests.get(url)
     response.raise_for_status()
-    check_for_redirect(response)
+    check_for_redirect(response, PageBookError)
     return response
 
 
@@ -50,9 +62,9 @@ def get_page_data(response):
     }
 
 
-def check_for_redirect(response):
+def check_for_redirect(response, exception_type=None):
     if response.history:
-        raise requests.HTTPError
+        raise exception_type
 
 
 def download_txt(url, filename, folder='books/'):
@@ -107,6 +119,10 @@ def createparser():
 
 
 if __name__ == "__main__":
+    logger = logging.getLogger()
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter('%(message)s'))
+    logger.addHandler(handler)
     parser = createparser()
     args = parser.parse_args(sys.argv[1:])
     books_folder_name = 'books'
@@ -116,16 +132,20 @@ if __name__ == "__main__":
         page_url = f'{url}b{book_id}/'
         try:
             book_page_data = parse_book_page(page_url)
-        except requests.HTTPError:
-            continue
-        book_poster = get_page_data(book_page_data)
-        book_name = f'{sequence_number}. {book_poster["book_title"]}'
-        try:
+            book_poster = get_page_data(book_page_data)
+            book_name = f'{sequence_number}. {book_poster["book_title"]}'
             download_txt(page_url, book_name)
             download_image(book_poster['book_image_url'])
-        except requests.HTTPError:
+        except DownloadBookError:
+            logger.warning(f'Книга не скачена! Книга #{book_id} недоступна для скачивания.')
             continue
-
+        except PageBookError:
+            logger.warning(f'Книга #{book_id} отсутствует в библиотеке.')
+            continue
+        except requests.exceptions.ConnectionError:
+            logger.warning(f'Не удается подключиться к серверу! Повторное подключение через 10 секунд.')
+            time.sleep(10)
+            continue
         print(f'{sequence_number} Название:', book_poster['book_title'])
         print(f'  Автор:', book_poster['book_author'])
         print(f'  Ссылка на обложку книги:', book_poster['book_image_url'])
