@@ -9,6 +9,8 @@ import logging
 import time
 
 
+logger = logging.getLogger(__name__)
+
 class DownloadBookError(requests.HTTPError):
     """Если нет ссылки на скачивание"""
     pass
@@ -119,7 +121,6 @@ def createparser():
 
 
 if __name__ == "__main__":
-    logger = logging.getLogger()
     handler = logging.StreamHandler()
     handler.setFormatter(logging.Formatter('%(message)s'))
     logger.addHandler(handler)
