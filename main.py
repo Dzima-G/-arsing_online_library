@@ -11,13 +11,10 @@ import time
 
 logger = logging.getLogger(__name__)
 
-class DownloadBookError(requests.HTTPError):
-    """Если нет ссылки на скачивание"""
-    pass
 
 
-class PageBookError(requests.HTTPError):
-    """Если отсутствует страница"""
+class BookError(requests.HTTPError):
+    """Если отсутствует книга"""
     pass
 
 
@@ -25,14 +22,14 @@ def get_books(url, book_id):
     payload = {'id': book_id}
     response = requests.get(url, params=payload)
     response.raise_for_status()
-    check_for_redirect(response, DownloadBookError)
+    check_for_redirect(response)
     return response.text
 
 
 def parse_book_page(url):
     response = requests.get(url)
     response.raise_for_status()
-    check_for_redirect(response, PageBookError)
+    check_for_redirect(response)
     return response
 
 
@@ -64,9 +61,9 @@ def get_page_data(response):
     }
 
 
-def check_for_redirect(response, exception_type=None):
+def check_for_redirect(response):
     if response.history:
-        raise exception_type
+        raise BookError
 
 
 def download_txt(url, filename, folder='books/'):
@@ -137,10 +134,7 @@ if __name__ == "__main__":
             book_name = f'{sequence_number}. {book_poster["book_title"]}'
             download_txt(page_url, book_name)
             download_image(book_poster['book_image_url'])
-        except DownloadBookError:
-            logger.warning(f'Книга не скачена! Книга #{book_id} недоступна для скачивания.')
-            continue
-        except PageBookError:
+        except BookError:
             logger.warning(f'Книга #{book_id} отсутствует в библиотеке.')
             continue
         except requests.exceptions.ConnectionError:
