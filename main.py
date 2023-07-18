@@ -16,14 +16,6 @@ class BookError(requests.HTTPError):
     pass
 
 
-def get_books(url, book_id):
-    payload = {'id': book_id}
-    response = requests.get(url, params=payload)
-    response.raise_for_status()
-    check_for_redirect(response)
-    return response.text
-
-
 def get_book_page(url):
     response = requests.get(url)
     response.raise_for_status()
@@ -66,7 +58,13 @@ def download_txt(url, filename, folder='books/'):
     url_parts = list(urlsplit(url))
     url_parts[2] = 'txt.php'
     book_url = urlunsplit(url_parts)
-    book_text = get_books(book_url, book_id)
+
+    payload = {'id': book_id}
+    response = requests.get(book_url, params=payload)
+    response.raise_for_status()
+    check_for_redirect(response)
+    book_text = response.text
+
     filename = sanitize_filename(f'{filename}.txt')
     fpath = sanitize_filepath(folder)
     os.makedirs(fpath, exist_ok=True)
