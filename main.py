@@ -35,18 +35,18 @@ def parse_book_page(response, book_id):
     soup = BeautifulSoup(response.text, 'lxml')
     book_title, book_author = [i.strip() for i in (soup.find('h1').text.split('   ::   '))]
     book_image_url = urljoin(f'https://tululu.org/{book_id}', soup.find('div', class_='bookimage').find('img')['src'])
-    comments_tag = soup.find_all('div', class_='texts')
+    comments_tags = soup.find_all('div', class_='texts')
     book_comments = []
-    if comments_tag:
-        for item_comment in comments_tag:
+    if comments_tags:
+        for item_comment in comments_tags:
             comment_tag = item_comment.find_all('span')
             comment_text = comment_tag[0].text
             book_comments.append(comment_text)
-    genres_tag = soup.find('span', class_='d_book')
-    genres_tag = genres_tag.find_all('a')
+    genres_tags = soup.find('span', class_='d_book')
+    genres_tags = genres_tags.find_all('a')
     book_genre = []
-    if genres_tag:
-        for item_genre in genres_tag:
+    if genres_tags:
+        for item_genre in genres_tags:
             genre_text = item_genre.text
             book_genre.append(genre_text)
 
