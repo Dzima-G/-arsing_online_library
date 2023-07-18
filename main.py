@@ -8,9 +8,7 @@ from urllib.parse import urlsplit, urlunsplit, urljoin
 import logging
 import time
 
-
 logger = logging.getLogger(__name__)
-
 
 
 class BookError(requests.HTTPError):
@@ -26,17 +24,17 @@ def get_books(url, book_id):
     return response.text
 
 
-def parse_book_page(url):
+def get_book_page(url):
     response = requests.get(url)
     response.raise_for_status()
     check_for_redirect(response)
     return response
 
 
-def get_page_data(response):
+def parse_book_page(response, book_id):
     soup = BeautifulSoup(response.text, 'lxml')
     book_title, book_author = [i.strip() for i in (soup.find('h1').text.split('   ::   '))]
-    book_image_url = urljoin('https://tululu.org/', soup.find('div', class_='bookimage').find('img')['src'])
+    book_image_url = urljoin(f'https://tululu.org/{book_id}', soup.find('div', class_='bookimage').find('img')['src'])
     comments_tag = soup.find_all('div', class_='texts')
     book_comments = []
     if comments_tag:
@@ -101,7 +99,7 @@ def download_image(url, folder='images/'):
         file.write(response.content)
 
 
-def createparser():
+def create_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=('''\
@@ -121,16 +119,18 @@ if __name__ == "__main__":
     handler = logging.StreamHandler()
     handler.setFormatter(logging.Formatter('%(message)s'))
     logger.addHandler(handler)
-    parser = createparser()
+
+    parser = create_parser()
     args = parser.parse_args(sys.argv[1:])
     books_folder_name = 'books'
     url = 'https://tululu.org/'
     sequence_number = 1
+
     for book_id in range(args.start_id, args.end_id + 1):
         page_url = f'{url}b{book_id}/'
         try:
-            book_page_data = parse_book_page(page_url)
-            book_poster = get_page_data(book_page_data)
+            book_page = get_book_page(page_url)
+            book_poster = parse_book_page(book_page, book_id)
             book_name = f'{sequence_number}. {book_poster["book_title"]}'
             download_txt(page_url, book_name)
             download_image(book_poster['book_image_url'])
@@ -141,6 +141,7 @@ if __name__ == "__main__":
             logger.warning(f'Не удается подключиться к серверу! Повторное подключение через 10 секунд.')
             time.sleep(10)
             continue
+
         print(f'{sequence_number} Название:', book_poster['book_title'])
         print(f'  Автор:', book_poster['book_author'])
         print(f'  Ссылка на обложку книги:', book_poster['book_image_url'])
