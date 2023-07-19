@@ -124,6 +124,8 @@ if __name__ == "__main__":
         except BookError:
             logger.warning(f'Книга #{book_id} отсутствует в библиотеке.')
             continue
+        except requests.exceptions.HTTPError as error:
+            print(error, file=sys.stderr)
         except requests.exceptions.ConnectionError:
             logger.warning(f'Не удается подключиться к серверу! Повторное подключение через 10 секунд.')
             time.sleep(10)
