@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filepath, sanitize_filename
 import argparse
 import sys
-from urllib.parse import urlsplit, urlunsplit, urljoin
+from urllib.parse import urljoin
 import logging
 import time
 
@@ -23,20 +23,20 @@ def get_book_page(url):
     return response
 
 
-def parse_book_page(response, book_id):
-    soup = BeautifulSoup(response.text, 'lxml')
+def parse_book_page(soup, book_id):
     book_title, book_author = [i.strip() for i in (soup.find('h1').text.split('   ::   '))]
-    book_image_url = urljoin(f'https://tululu.org/{book_id}', soup.find('div', class_='bookimage').find('img')['src'])
+    book_image_url = urljoin(f'https://tululu.org/{book_id}',
+                             soup.find('div', class_='bookimage').find('img')['src'])
     comments_tags = soup.select('.texts .black')
     book_comments = [item_comment.text for item_comment in comments_tags]
     genres_tags = soup.select('span.d_book a')
-    book_genre = [item_genre.text for item_genre in genres_tags]
+    book_genres = [genre.text for genre in genres_tags]
     return {
         'book_title': book_title,
         'book_author': book_author,
         'book_image_url': book_image_url,
         'book_comments': book_comments,
-        'book_genre': book_genre
+        'book_genre': book_genres
     }
 
 
@@ -45,7 +45,7 @@ def check_for_redirect(response):
         raise BookError
 
 
-def download_txt(url, filename, folder='books/'):
+def download_txt(book_id, filename, folder='books/'):
     """Функция для скачивания текстовых файлов.
     Args:
         url (str): Cсылка на текст, который хочется скачать.
@@ -54,11 +54,7 @@ def download_txt(url, filename, folder='books/'):
     Returns:
         str: Путь до файла, куда сохранён текст.
     """
-    book_id = urlsplit(url).path.strip('/')[1:]
-    url_parts = list(urlsplit(url))
-    url_parts[2] = 'txt.php'
-    book_url = urlunsplit(url_parts)
-
+    book_url = 'https://tululu.org/txt.php'
     payload = {'id': book_id}
     response = requests.get(book_url, params=payload)
     response.raise_for_status()
@@ -117,9 +113,10 @@ if __name__ == "__main__":
         page_url = f'{url}b{book_id}/'
         try:
             book_page = get_book_page(page_url)
-            book_poster = parse_book_page(book_page, book_id)
+            soup = BeautifulSoup(book_page.text, 'lxml')
+            book_poster = parse_book_page(soup, book_id)
             book_name = f'{sequence_number}. {book_poster["book_title"]}'
-            download_txt(page_url, book_name)
+            download_txt(book_id, book_name)
             download_image(book_poster['book_image_url'])
         except BookError:
             logger.warning(f'Книга #{book_id} отсутствует в библиотеке.')
