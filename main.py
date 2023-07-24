@@ -98,6 +98,17 @@ def create_parser():
     return parser
 
 
+def print_book_poster(sequence_number, book_poster):
+    print(f'{sequence_number} Название:', book_poster['book_title'])
+    print(f'  Автор:', book_poster['book_author'])
+    print(f'  Ссылка на обложку книги:', book_poster['book_image_url'])
+
+    if book_poster['book_comments']:
+        print(f'  Комментарии:', *book_poster['book_comments'])
+    print(f'  Жанр книги:', *book_poster['book_genre'])
+    print('')
+
+
 if __name__ == "__main__":
     handler = logging.StreamHandler()
     handler.setFormatter(logging.Formatter('%(message)s'))
@@ -123,17 +134,10 @@ if __name__ == "__main__":
             continue
         except requests.exceptions.HTTPError as error:
             print(error, file=sys.stderr)
+            continue
         except requests.exceptions.ConnectionError:
             logger.warning(f'Не удается подключиться к серверу! Повторное подключение через 10 секунд.')
             time.sleep(10)
             continue
-
-        print(f'{sequence_number} Название:', book_poster['book_title'])
-        print(f'  Автор:', book_poster['book_author'])
-        print(f'  Ссылка на обложку книги:', book_poster['book_image_url'])
-
-        if book_poster['book_comments']:
-            print(f'  Комментарии:', *book_poster['book_comments'])
-        print(f'  Жанр книги:', *book_poster['book_genre'])
-        print('')
+        print_book_poster(sequence_number, book_poster)
         sequence_number += 1
