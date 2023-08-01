@@ -6,6 +6,7 @@ from urllib.parse import urljoin, urlparse
 from pathvalidate import sanitize_filepath, sanitize_filename
 import os
 import json
+import argparse
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +78,7 @@ def download_txt(book_id, filename, folder='books/'):
     fpath = sanitize_filepath(folder)
     os.makedirs(fpath, exist_ok=True)
     file_path = os.path.join(fpath, filename)
-    with open(file_path, 'w') as file:
+    with open(file_path, 'w', encoding="utf-8") as file:
         file.write(book_text)
     return file_path
 
@@ -114,11 +115,31 @@ def get_content_json(content):
         my_file.write(content_json)
 
 
+def create_parser():
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=('''\
+Скрипт скачивает книги с сайта https://tululu.org/
+--------------------------------------------------
+Для скачивания необходимо указать параметры:
+--start_page - первая скачиваемая страница
+--end_page - страница по которую скачиваются книги (не включительно)'''))
+    parser.add_argument('--start_page', default=700, nargs='?', type=int,
+                        help='Введите первую скачиваемую страницу')
+    parser.add_argument('--end_page', default=None, nargs='?', type=int,
+                        help="Введите последнюю скачиваемую страницу (не включительно)")
+    return parser
+
+
 if __name__ == "__main__":
     input_category = 'Фантастика - фэнтези'
     input_subcategory = 'Научная фантастика'
+
     books_page_id = []
     content_json = []
+
+    parser = create_parser()
+    args = parser.parse_args(sys.argv[1:])
 
     try:
         home_page = get_book_page('https://tululu.org/')
@@ -127,7 +148,13 @@ if __name__ == "__main__":
         subcategory_url = get_subcategories(subcategory_page, input_subcategory)
         path = urlparse(subcategory_url).path
 
-        for page in range(1, 2):
+        last_page = args.end_page
+        if not last_page:
+            subcategory_page = get_book_page(subcategory_url)
+            soup = BeautifulSoup(subcategory_page.text, 'lxml')
+            last_page = int(soup.select('.npage')[-1]['href'].split('/')[2]) + 1
+
+        for page in range(args.start_page, last_page):
             subcategory_page = get_book_page(urljoin('https://tululu.org/', f'{path}/{page}/'))
             books_page_id = books_page_id + get_book_id(subcategory_page)
     except requests.exceptions.HTTPError as error:
