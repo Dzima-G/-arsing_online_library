@@ -66,7 +66,7 @@ def parse_book_page(soup, book_id):
     }
 
 
-def download_txt(book_id, filename, folder='books/'):
+def download_txt(book_id, filename, folder):
     book_url = 'https://tululu.org/txt.php'
     payload = {'id': book_id}
     response = requests.get(book_url, params=payload)
@@ -83,7 +83,7 @@ def download_txt(book_id, filename, folder='books/'):
     return file_path
 
 
-def download_image(url, folder='images/'):
+def download_image(url, folder):
     fpath = sanitize_filepath(folder)
     os.makedirs(fpath, exist_ok=True)
     response = requests.get(url)
@@ -109,8 +109,9 @@ def get_books_content(book_poster, content_json):
     return content_json
 
 
-def get_content_json(content):
-    with open("capitals.json", "w", encoding='utf8') as my_file:
+def get_content_json(content, folder):
+    file_path = os.path.join(folder, 'content.json')
+    with open(file_path, "w", encoding='utf8') as my_file:
         content_json = json.dumps(content, indent=4, ensure_ascii=False)
         my_file.write(content_json)
 
@@ -123,11 +124,23 @@ def create_parser():
 --------------------------------------------------
 Для скачивания необходимо указать параметры:
 --start_page - первая скачиваемая страница
---end_page - страница по которую скачиваются книги (не включительно)'''))
+--end_page - страница по которую скачиваются книги (не включительно)
+--dest_folder — путь к каталогу с результатами парсинга: картинкам, книгам, JSON.
+--skip_imgs — не скачивать картинки
+--skip_txt — не скачивать книги'''))
+
     parser.add_argument('--start_page', default=700, nargs='?', type=int,
                         help='Введите первую скачиваемую страницу')
     parser.add_argument('--end_page', default=None, nargs='?', type=int,
                         help="Введите последнюю скачиваемую страницу (не включительно)")
+    parser.add_argument('--dest_folder', default='books',
+                        help="Введите каталог куда сохранять результаты парсинга: картинки, книги, JSON")
+    parser.add_argument('--skip_imgs', default=False, action='store_true',
+                        help="Используйте если необходимо не скачивать картинки")
+    parser.add_argument('--skip_txt', default=False, action='store_true',
+                        help="Используйте если необходимо не скачивать книги")
+
+
     return parser
 
 
@@ -160,6 +173,10 @@ if __name__ == "__main__":
     except requests.exceptions.HTTPError as error:
         print(error, file=sys.stderr)
 
+    if args.dest_folder:
+        os.makedirs(args.dest_folder, exist_ok=True)
+        dest_folder = args.dest_folder
+
     for book_id in books_page_id:
         page_url = urljoin('https://tululu.org/', f'b{book_id}/')
 
@@ -168,8 +185,10 @@ if __name__ == "__main__":
             soup = BeautifulSoup(book_page.text, 'lxml')
             book_poster = parse_book_page(soup, book_id)
             book_name = f'{book_id}-я книга. {book_poster["book_title"]}'
-            download_txt(book_id, book_name)
-            download_image(book_poster['book_image_url'])
+            if not args.skip_txt:
+                download_txt(book_id, book_name,  dest_folder)
+            if not args.skip_imgs:
+                download_image(book_poster['book_image_url'],  dest_folder)
         except BookError:
             logger.warning(f'Книга #{book_id} отсутствует в библиотеке.')
             continue
@@ -180,4 +199,4 @@ if __name__ == "__main__":
             logger.warning(f'Не удается подключиться к серверу! Повторное подключение через 10 секунд.')
 
         books_content = get_books_content(book_poster, content_json)
-        get_content_json(books_content)
+        get_content_json(books_content, dest_folder)
