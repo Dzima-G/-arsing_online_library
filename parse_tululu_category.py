@@ -83,19 +83,6 @@ def download_image(url, folder):
         file.write(response.content)
 
 
-# def get_books_content(book_poster, content_json):
-#     content = {
-#         "title": book_poster['book_title'],
-#         "autor": book_poster['book_author'],
-#         "img_src": f"images/{sanitize_filename(book_poster['book_image_url'].split('/')[-1])}",
-#         "book_path": f'/books/{book_name}.txt',
-#     }
-#     if book_poster['book_comments']:
-#         content["comments"] = book_poster['book_comments']
-#     content["genres"] = book_poster['book_genre']
-#     content_json.append(content)
-#     return content_json
-
 
 def save_books_description(content, folder):
     file_path = os.path.join(folder, 'content.json')
