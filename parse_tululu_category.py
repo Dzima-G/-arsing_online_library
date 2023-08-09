@@ -7,6 +7,8 @@ from pathvalidate import sanitize_filepath, sanitize_filename
 import os
 import json
 import argparse
+import time
+from main import check_for_redirect, get_book_page
 
 logger = logging.getLogger(__name__)
 
@@ -16,37 +18,23 @@ class BookError(requests.HTTPError):
     pass
 
 
-def check_for_redirect(response):
-    if response.history:
-        raise BookError
-
-
-def get_book_page(url):
-    response = requests.get(url)
-    response.raise_for_status()
-    check_for_redirect(response)
-    return response
-
-
 def get_categories(response):
     soup = BeautifulSoup(response.text, 'lxml')
-    book_category = [' '.join(i.text.split()) for i in (soup.select('#leftnavmenu dt b'))]
-    category_url = [i.get('href') for i in (soup.select('#leftnavmenu dt a'))]
-    return dict(zip(book_category, category_url))
+    book_category = {' '.join(i.select('b')[0].text.split()): i.select('a')[0].get('href') for i in
+                     (soup.select('#leftnavmenu dt'))}
+    return book_category
 
 
-def get_subcategories(response, subcategory):
+def get_subcategories(response):
     soup = BeautifulSoup(response.text, 'lxml')
-    book_subcategories = [' '.join(i.text.split())[1:].strip() for i in (soup.select('#leftnavmenu dd a'))]
-    subcategories_url = [i.get('href') for i in (soup.select('#leftnavmenu dd a'))]
-    subcategories = dict(zip(book_subcategories, subcategories_url))
-    return subcategories.get(subcategory)
+    subcategories = {' '.join(i.text.split())[1:].strip(): i.get('href') for i in (soup.select('#leftnavmenu dd a'))}
+    return subcategories
 
 
-def get_book_id(response):
+def get_book_ids(response):
     soup = BeautifulSoup(response.text, 'lxml')
-    books_id = [x.get('href').strip('/')[1:] for x in (soup.select('.bookimage a'))]
-    return books_id
+    book_ids = [x.get('href').strip('/')[1:] for x in (soup.select('.bookimage a'))]
+    return book_ids
 
 
 def parse_book_page(soup, book_id):
@@ -95,25 +83,24 @@ def download_image(url, folder):
         file.write(response.content)
 
 
-def get_books_content(book_poster, content_json):
-    content = {
-        "title": book_poster['book_title'],
-        "autor": book_poster['book_author'],
-        "img_src": f"images/{sanitize_filename(book_poster['book_image_url'].split('/')[-1])}",
-        "book_path": f'/books/{book_name}.txt',
-    }
-    if book_poster['book_comments']:
-        content["comments"] = book_poster['book_comments']
-    content["genres"] = book_poster['book_genre']
-    content_json.append(content)
-    return content_json
+# def get_books_content(book_poster, content_json):
+#     content = {
+#         "title": book_poster['book_title'],
+#         "autor": book_poster['book_author'],
+#         "img_src": f"images/{sanitize_filename(book_poster['book_image_url'].split('/')[-1])}",
+#         "book_path": f'/books/{book_name}.txt',
+#     }
+#     if book_poster['book_comments']:
+#         content["comments"] = book_poster['book_comments']
+#     content["genres"] = book_poster['book_genre']
+#     content_json.append(content)
+#     return content_json
 
 
-def get_content_json(content, folder):
+def save_books_description(content, folder):
     file_path = os.path.join(folder, 'content.json')
-    with open(file_path, "w", encoding='utf8') as my_file:
-        content_json = json.dumps(content, indent=4, ensure_ascii=False)
-        my_file.write(content_json)
+    with open(file_path, "w", encoding='utf8') as file:
+        file.write(json.dumps(content, indent=4, ensure_ascii=False))
 
 
 def create_parser():
@@ -146,8 +133,8 @@ if __name__ == "__main__":
     input_category = 'Фантастика - фэнтези'
     input_subcategory = 'Научная фантастика'
 
-    books_page_id = []
-    content_json = []
+    book_page_ids = []
+    books_description = []
 
     parser = create_parser()
     args = parser.parse_args(sys.argv[1:])
@@ -156,7 +143,8 @@ if __name__ == "__main__":
         home_page = get_book_page('https://tululu.org/')
         categories = get_categories(home_page)
         subcategory_page = get_book_page(urljoin('https://tululu.org/', categories.get(input_category)))
-        subcategory_url = get_subcategories(subcategory_page, input_subcategory)
+        subcategories = get_subcategories(subcategory_page)
+        subcategory_url = subcategories.get(input_subcategory)
         path = urlparse(subcategory_url).path
 
         last_page = args.end_page
@@ -167,15 +155,15 @@ if __name__ == "__main__":
 
         for page in range(args.start_page, last_page):
             subcategory_page = get_book_page(urljoin('https://tululu.org/', f'{path}/{page}/'))
-            books_page_id = books_page_id + get_book_id(subcategory_page)
-    except requests.exceptions.HTTPError as error:
-        print(error, file=sys.stderr)
+            book_page_ids = book_page_ids + get_book_ids(subcategory_page)
+    except requests.exceptions.MissingSchema as error:
+        print(f'Категория "{input_category}" или подкатегория "{input_subcategory}" - отсутствует!')
 
     if args.dest_folder:
         os.makedirs(args.dest_folder, exist_ok=True)
         dest_folder = args.dest_folder
 
-    for book_id in books_page_id:
+    for book_id in book_page_ids:
         page_url = urljoin('https://tululu.org/', f'b{book_id}/')
 
         try:
@@ -184,9 +172,9 @@ if __name__ == "__main__":
             book_poster = parse_book_page(soup, book_id)
             book_name = f'{book_id}-я книга. {book_poster["book_title"]}'
             if not args.skip_txt:
-                download_txt(book_id, book_name,  dest_folder)
+                download_txt(book_id, book_name, dest_folder)
             if not args.skip_imgs:
-                download_image(book_poster['book_image_url'],  dest_folder)
+                download_image(book_poster['book_image_url'], dest_folder)
         except BookError:
             logger.warning(f'Книга #{book_id} отсутствует в библиотеке.')
             continue
@@ -195,6 +183,17 @@ if __name__ == "__main__":
             continue
         except requests.exceptions.ConnectionError:
             logger.warning(f'Не удается подключиться к серверу! Повторное подключение через 10 секунд.')
+            time.sleep(10)
+            continue
 
-        books_content = get_books_content(book_poster, content_json)
-        get_content_json(books_content, dest_folder)
+        book_description = {
+            "title": book_poster['book_title'],
+            "autor": book_poster['book_author'],
+            "img_src": f"images/{sanitize_filename(book_poster['book_image_url'].split('/')[-1])}",
+            "book_path": f'/books/{book_name}.txt',
+        }
+        if book_poster['book_comments']:
+            book_description["comments"] = book_poster['book_comments']
+        book_description["genres"] = book_poster['book_genre']
+        books_description.append(book_description)
+    save_books_description(books_description, dest_folder)
