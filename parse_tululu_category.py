@@ -8,21 +8,21 @@ import os
 import json
 import argparse
 import time
-from main import check_for_redirect, get_book_page
+from main import get_book_page, parse_book_page, download_txt, download_image, BookError
 
 logger = logging.getLogger(__name__)
 
 
-class BookError(requests.HTTPError):
-    """Если отсутствует книга"""
-    pass
-
-
 def get_categories(response):
     soup = BeautifulSoup(response.text, 'lxml')
-    book_category = {' '.join(i.select('b')[0].text.split()): i.select('a')[0].get('href') for i in
-                     (soup.select('#leftnavmenu dt'))}
-    return book_category
+    for x, i in enumerate(soup.select('#leftnavmenu dt')):
+        category = ' '.join(i.select('b')[0].text.split())
+        link = i.select('a')[0].get('href')
+        if x == 0:
+            books_category = {category: link}
+        else:
+            books_category[category] = link
+    return books_category
 
 
 def get_subcategories(response):
@@ -37,57 +37,10 @@ def get_book_ids(response):
     return book_ids
 
 
-def parse_book_page(soup, book_id):
-    book_title, book_author = [i.strip() for i in (soup.find('h1').text.split('   ::   '))]
-    book_image_url = urljoin(f'https://tululu.org/{book_id}',
-                             soup.find('div', class_='bookimage').find('img')['src'])
-    comments_tags = soup.select('.texts .black')
-    book_comments = [item_comment.text for item_comment in comments_tags]
-    genres_tags = soup.select('span.d_book a')
-    book_genres = [genre.text for genre in genres_tags]
-    return {
-        'book_title': book_title,
-        'book_author': book_author,
-        'book_image_url': book_image_url,
-        'book_comments': book_comments,
-        'book_genre': book_genres
-    }
-
-
-def download_txt(book_id, filename, folder):
-    book_url = 'https://tululu.org/txt.php'
-    payload = {'id': book_id}
-    response = requests.get(book_url, params=payload)
-    response.raise_for_status()
-    check_for_redirect(response)
-    book_text = response.text
-
-    filename = sanitize_filename(f'{filename}.txt')
-    fpath = sanitize_filepath(folder)
-    os.makedirs(fpath, exist_ok=True)
-    file_path = os.path.join(fpath, filename)
-    with open(file_path, 'w', encoding="utf-8") as file:
-        file.write(book_text)
-    return file_path
-
-
-def download_image(url, folder):
-    fpath = sanitize_filepath(folder)
-    os.makedirs(fpath, exist_ok=True)
-    response = requests.get(url)
-    response.raise_for_status()
-    check_for_redirect(response)
-    filename = sanitize_filename(url.split('/')[-1])
-    file_path = os.path.join(folder, filename)
-    with open(file_path, 'wb') as file:
-        file.write(response.content)
-
-
-
 def save_books_description(content, folder):
     file_path = os.path.join(folder, 'content.json')
     with open(file_path, "w", encoding='utf8') as file:
-        file.write(json.dumps(content, indent=4, ensure_ascii=False))
+        json.dump(content, file, indent=4, ensure_ascii=False)
 
 
 def create_parser():
@@ -125,26 +78,41 @@ if __name__ == "__main__":
 
     parser = create_parser()
     args = parser.parse_args(sys.argv[1:])
-
     try:
         home_page = get_book_page('https://tululu.org/')
         categories = get_categories(home_page)
         subcategory_page = get_book_page(urljoin('https://tululu.org/', categories.get(input_category)))
-        subcategories = get_subcategories(subcategory_page)
-        subcategory_url = subcategories.get(input_subcategory)
-        path = urlparse(subcategory_url).path
-
-        last_page = args.end_page
-        if not last_page:
+    except requests.exceptions.HTTPError as error:
+        print(error, file=sys.stderr)
+    except requests.exceptions.ConnectionError:
+        logger.warning(f'Не удается подключиться к серверу! https://tululu.org/ на данный момент недоступен!')
+    subcategories = get_subcategories(subcategory_page)
+    subcategory_url = subcategories.get(input_subcategory)
+    path = urlparse(subcategory_url).path
+    last_page = args.end_page
+    if not last_page:
+        try:
             subcategory_page = get_book_page(subcategory_url)
-            soup = BeautifulSoup(subcategory_page.text, 'lxml')
-            last_page = int(soup.select('.npage')[-1]['href'].split('/')[2]) + 1
+        except requests.exceptions.HTTPError as error:
+            print(error, file=sys.stderr)
+            sys.exit()
+        except requests.exceptions.MissingSchema as error:
+            print(f'Категория "{input_category}" или подкатегория "{input_subcategory}" - отсутствует!')
+            sys.exit()
+        soup = BeautifulSoup(subcategory_page.text, 'lxml')
+        last_page = int(soup.select('.npage')[-1]['href'].split('/')[2]) + 1
 
-        for page in range(args.start_page, last_page):
+    for page in range(args.start_page, last_page):
+        try:
             subcategory_page = get_book_page(urljoin('https://tululu.org/', f'{path}/{page}/'))
             book_page_ids = book_page_ids + get_book_ids(subcategory_page)
-    except requests.exceptions.MissingSchema as error:
-        print(f'Категория "{input_category}" или подкатегория "{input_subcategory}" - отсутствует!')
+        except requests.exceptions.HTTPError as error:
+            print(error, file=sys.stderr)
+            continue
+        except requests.exceptions.ConnectionError:
+            logger.warning(f'Не удается подключиться к серверу! Повторное подключение через 10 секунд.')
+            time.sleep(10)
+            continue
 
     if args.dest_folder:
         os.makedirs(args.dest_folder, exist_ok=True)
@@ -167,6 +135,7 @@ if __name__ == "__main__":
             continue
         except requests.exceptions.HTTPError as error:
             print(error, file=sys.stderr)
+            print(' Это')
             continue
         except requests.exceptions.ConnectionError:
             logger.warning(f'Не удается подключиться к серверу! Повторное подключение через 10 секунд.')
@@ -178,9 +147,9 @@ if __name__ == "__main__":
             "autor": book_poster['book_author'],
             "img_src": f"images/{sanitize_filename(book_poster['book_image_url'].split('/')[-1])}",
             "book_path": f'/books/{book_name}.txt',
+            "comments": book_poster['book_comments'],
+            "genres": book_poster['book_genre'],
         }
-        if book_poster['book_comments']:
-            book_description["comments"] = book_poster['book_comments']
-        book_description["genres"] = book_poster['book_genre']
+
         books_description.append(book_description)
     save_books_description(books_description, dest_folder)
