@@ -9,25 +9,28 @@ import json
 import argparse
 import time
 from main import get_book_page, parse_book_page, download_txt, download_image, BookError
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
 
 def get_categories(response):
     soup = BeautifulSoup(response.text, 'lxml')
-    for x, i in enumerate(soup.select('#leftnavmenu dt')):
-        category = ' '.join(i.select('b')[0].text.split())
-        link = i.select('a')[0].get('href')
-        if x == 0:
-            books_category = {category: link}
-        else:
-            books_category[category] = link
+    books_category = defaultdict(int)
+    for soup_item in soup.select('#leftnavmenu dt'):
+        category = ' '.join(soup_item.select('b')[0].text.split())
+        link = soup_item.select('a')[0].get('href')
+        books_category[category] = link
     return books_category
 
 
 def get_subcategories(response):
     soup = BeautifulSoup(response.text, 'lxml')
-    subcategories = {' '.join(i.text.split())[1:].strip(): i.get('href') for i in (soup.select('#leftnavmenu dd a'))}
+    subcategories = defaultdict(int)
+    for soup_item in soup.select('#leftnavmenu dd a'):
+        subcategory = ' '.join(soup_item.text.split())[1:].strip()
+        link = soup_item.get('href')
+        subcategories[subcategory] = link
     return subcategories
 
 
@@ -83,9 +86,11 @@ if __name__ == "__main__":
         categories = get_categories(home_page)
         subcategory_page = get_book_page(urljoin('https://tululu.org/', categories.get(input_category)))
     except requests.exceptions.HTTPError as error:
-        print(error, file=sys.stderr)
+        sys.exit()
     except requests.exceptions.ConnectionError:
         logger.warning(f'Не удается подключиться к серверу! https://tululu.org/ на данный момент недоступен!')
+        sys.exit()
+
     subcategories = get_subcategories(subcategory_page)
     subcategory_url = subcategories.get(input_subcategory)
     path = urlparse(subcategory_url).path
@@ -93,9 +98,6 @@ if __name__ == "__main__":
     if not last_page:
         try:
             subcategory_page = get_book_page(subcategory_url)
-        except requests.exceptions.HTTPError as error:
-            print(error, file=sys.stderr)
-            sys.exit()
         except requests.exceptions.MissingSchema as error:
             print(f'Категория "{input_category}" или подкатегория "{input_subcategory}" - отсутствует!')
             sys.exit()
@@ -135,7 +137,6 @@ if __name__ == "__main__":
             continue
         except requests.exceptions.HTTPError as error:
             print(error, file=sys.stderr)
-            print(' Это')
             continue
         except requests.exceptions.ConnectionError:
             logger.warning(f'Не удается подключиться к серверу! Повторное подключение через 10 секунд.')
