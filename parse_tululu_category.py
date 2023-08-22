@@ -85,8 +85,6 @@ if __name__ == "__main__":
         home_page = get_book_page('https://tululu.org/')
         categories = get_categories(home_page)
         subcategory_page = get_book_page(urljoin('https://tululu.org/', categories.get(input_category)))
-    except requests.exceptions.HTTPError as error:
-        sys.exit()
     except requests.exceptions.ConnectionError:
         logger.warning(f'Не удается подключиться к серверу! https://tululu.org/ на данный момент недоступен!')
         sys.exit()
