@@ -129,7 +129,7 @@ if __name__ == "__main__":
             if not args.skip_txt:
                 download_txt(book_id, book_name, dest_folder)
             if not args.skip_imgs:
-                download_image(book_poster['book_image_url'], dest_folder)
+                download_image(book_poster['book_image_url'])
         except BookError:
             logger.warning(f'Книга #{book_id} отсутствует в библиотеке.')
             continue

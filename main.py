@@ -65,7 +65,7 @@ def download_txt(book_id, filename, folder='books/'):
     fpath = sanitize_filepath(folder)
     os.makedirs(fpath, exist_ok=True)
     file_path = os.path.join(fpath, filename)
-    with open(file_path, 'w') as file:
+    with open(file_path, 'w', encoding="utf-8") as file:
         file.write(book_text)
     return file_path
 
