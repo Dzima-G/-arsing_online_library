@@ -1,7 +1,7 @@
 import json
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from livereload import Server
-
+import os
 
 def on_reload():
     env = Environment(
@@ -22,5 +22,6 @@ if __name__ == "__main__":
     on_reload()
 
     server = Server()
+
     server.watch('template/template.html', on_reload)
     server.serve(root='index.html')
