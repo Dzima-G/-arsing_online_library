@@ -125,7 +125,7 @@ if __name__ == "__main__":
             book_page = get_book_page(page_url)
             soup = BeautifulSoup(book_page.text, 'lxml')
             book_poster = parse_book_page(soup, book_id)
-            book_name = f'{book_id}-я книга. {book_poster["book_title"]}'
+            book_name = f'{book_id}-я книга. {book_poster["book_title"]}'.replace(' ', '_')
             if not args.skip_txt:
                 download_txt(book_id, book_name, dest_folder)
             if not args.skip_imgs:
