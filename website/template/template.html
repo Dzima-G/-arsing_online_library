@@ -11,7 +11,7 @@
         <title>Hello, world!</title>
     </head>
     <body>
-        <nav aria-label="Page navigation example">
+        <nav class="mt-4" >
             <ul class="pagination justify-content-center">
                 <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
                     <a class="page-link" href="index{{current_page - 1}}.html">Предыдущая</a>
@@ -37,11 +37,14 @@
                             </div>
                             <div class="col-md-8">
                                 <div class="card-body">
-                                    <h3 class="card-title">{{book_desc.title}}</h3>
+                                    <h4 class="card-title">{{book_desc.title}}</h4>
                                     <h5 class="card-title">{{book_desc.autor}}</h5>
-                                    <p class="card-text">Жанр книги: {{book_desc.genres}}</p>
+                                    <h6 class="card-text">
+                                        {% for book_genres in book_desc.genres %}
+                                            <span class="badge badge-light">{{book_genres}}</span>
+                                        {% endfor %}
+                                    </h6>
                                     <a href="../{{book_desc.book_path}}" target="_blank">Читать</a>
-                                    <p class="card-text"><small class="text-muted">Last updated 3 mins ago</small></p>
                                 </div>
                             </div>
                         </div>
