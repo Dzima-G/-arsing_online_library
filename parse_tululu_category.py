@@ -40,8 +40,8 @@ def get_book_ids(response):
     return book_ids
 
 
-def save_books_description(content, folder):
-    file_path = os.path.join(folder, 'content.json')
+def save_books_description(content, folder='website/'):
+    file_path = os.path.join(folder, 'content_books.json')
     with open(file_path, "w", encoding='utf8') as file:
         json.dump(content, file, indent=4, ensure_ascii=False)
 
@@ -63,7 +63,7 @@ def create_parser():
                         help='Введите первую скачиваемую страницу')
     parser.add_argument('--end_page', default=None, nargs='?', type=int,
                         help="Введите последнюю скачиваемую страницу (не включительно)")
-    parser.add_argument('--dest_folder', default='books',
+    parser.add_argument('--dest_folder', default='website/books',
                         help="Введите путь к каталогу с результатами парсинга: картинки, книги, JSON")
     parser.add_argument('--skip_imgs', default=False, action='store_true',
                         help="Используйте если необходимо пропустить загрузку картинок")
@@ -151,4 +151,4 @@ if __name__ == "__main__":
         }
 
         books_description.append(book_description)
-    save_books_description(books_description, dest_folder)
+    save_books_description(books_description)

@@ -45,7 +45,7 @@ def check_for_redirect(response):
         raise BookError
 
 
-def download_txt(book_id, filename, folder='books/'):
+def download_txt(book_id, filename, folder='website/books/'):
     """Функция для скачивания текстовых файлов.
     Args:
         url (str): Cсылка на текст, который хочется скачать.
@@ -70,7 +70,7 @@ def download_txt(book_id, filename, folder='books/'):
     return file_path
 
 
-def download_image(url, folder='images/'):
+def download_image(url, folder='website/images/'):
     fpath = sanitize_filepath(folder)
     os.makedirs(fpath, exist_ok=True)
     response = requests.get(url)
@@ -126,7 +126,7 @@ if __name__ == "__main__":
             book_page = get_book_page(page_url)
             soup = BeautifulSoup(book_page.text, 'lxml')
             book_poster = parse_book_page(soup, book_id)
-            book_name = f'{sequence_number}. {book_poster["book_title"]}'
+            book_name = f'{sequence_number}. {book_poster["book_title"]}'.replace(' ', '_')
             download_txt(book_id, book_name)
             download_image(book_poster['book_image_url'])
         except BookError:
