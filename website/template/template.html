@@ -11,6 +11,22 @@
         <title>Hello, world!</title>
     </head>
     <body>
+        <nav aria-label="Page navigation example">
+            <ul class="pagination justify-content-center">
+                <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                    <a class="page-link" href="index{{current_page - 1}}.html">Предыдущая</a>
+                </li>
+                {% for page in pages %}
+                    <li class="page-item {% if page == current_page %}active{% endif %}">
+                        <a class="page-link" href="index{{page}}.html">{{page}}</a>
+                    </li>
+                {% endfor %}
+                <li class="page-item {% if pages|length == current_page %}disabled{% endif %}">
+                  <a class="page-link" href="index{{ current_page + 1}}.html">Следующая</a>
+                </li>
+
+            </ul>
+        </nav>
         <div class="container">
             <div class="row row-cols-2">
                 {% for book_desc in books_desc %}
