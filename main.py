@@ -65,7 +65,7 @@ def download_txt(book_id, filename, folder='media/books/'):
     fpath = sanitize_filepath(folder)
     os.makedirs(fpath, exist_ok=True)
     file_path = os.path.join(fpath, filename)
-    with open(file_path, 'w', encoding="utf-8") as file:
+    with open(file_path, 'w', encoding='utf-8') as file:
         file.write(book_text)
     return file_path
 
@@ -109,7 +109,7 @@ def print_book_poster(sequence_number, book_poster):
     print('')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     handler = logging.StreamHandler()
     handler.setFormatter(logging.Formatter('%(message)s'))
     logger.addHandler(handler)

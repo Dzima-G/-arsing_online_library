@@ -40,9 +40,9 @@ def get_book_ids(response):
     return book_ids
 
 
-def save_books_description(content):
-    file_path = os.path.join('content_books.json')
-    with open(file_path, "w", encoding='utf8') as file:
+def save_books_description(content, folder):
+    file_path = os.path.join(folder, 'content_books.json')
+    with open(file_path, 'w', encoding='utf8') as file:
         json.dump(content, file, indent=4, ensure_ascii=False)
 
 
@@ -69,10 +69,12 @@ def create_parser():
                         help="Используйте если необходимо пропустить загрузку картинок")
     parser.add_argument('--skip_txt', default=False, action='store_true',
                         help="Используйте если необходимо пропустить загрузку книг")
+    parser.add_argument('--json_path', default='', nargs='?',
+                        help='Введите путь для сохранения файла JSON с метаданными книг')
     return parser
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     input_category = 'Фантастика - фэнтези'
     input_subcategory = 'Научная фантастика'
 
@@ -142,13 +144,13 @@ if __name__ == "__main__":
             continue
 
         book_description = {
-            "title": book_poster['book_title'],
-            "autor": book_poster['book_author'],
-            "img_src": f"media/images/{sanitize_filename(book_poster['book_image_url'].split('/')[-1])}",
-            "book_path": f'media/books/{book_name}.txt',
-            "comments": book_poster['book_comments'],
-            "genres": book_poster['book_genre'],
+            'title': book_poster['book_title'],
+            'autor': book_poster['book_author'],
+            'img_src': f"media/images/{sanitize_filename(book_poster['book_image_url'].split('/')[-1])}",
+            'book_path': f'media/books/{book_name}.txt',
+            'comments': book_poster['book_comments'],
+            'genres': book_poster['book_genre'],
         }
 
         books_description.append(book_description)
-    save_books_description(books_description)
+    save_books_description(books_description, args.json_path)
