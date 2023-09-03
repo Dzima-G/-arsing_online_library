@@ -45,7 +45,7 @@ def check_for_redirect(response):
         raise BookError
 
 
-def download_txt(book_id, filename, folder='website/books/'):
+def download_txt(book_id, filename, folder='media/books/'):
     """Функция для скачивания текстовых файлов.
     Args:
         url (str): Cсылка на текст, который хочется скачать.
@@ -70,7 +70,7 @@ def download_txt(book_id, filename, folder='website/books/'):
     return file_path
 
 
-def download_image(url, folder='website/images/'):
+def download_image(url, folder='media/images/'):
     fpath = sanitize_filepath(folder)
     os.makedirs(fpath, exist_ok=True)
     response = requests.get(url)

@@ -40,8 +40,8 @@ def get_book_ids(response):
     return book_ids
 
 
-def save_books_description(content, folder='website/'):
-    file_path = os.path.join(folder, 'content_books.json')
+def save_books_description(content):
+    file_path = os.path.join('content_books.json')
     with open(file_path, "w", encoding='utf8') as file:
         json.dump(content, file, indent=4, ensure_ascii=False)
 
@@ -63,7 +63,7 @@ def create_parser():
                         help='Введите первую скачиваемую страницу')
     parser.add_argument('--end_page', default=None, nargs='?', type=int,
                         help="Введите последнюю скачиваемую страницу (не включительно)")
-    parser.add_argument('--dest_folder', default='website/books',
+    parser.add_argument('--dest_folder', default='media/books',
                         help="Введите путь к каталогу с результатами парсинга: картинки, книги, JSON")
     parser.add_argument('--skip_imgs', default=False, action='store_true',
                         help="Используйте если необходимо пропустить загрузку картинок")
@@ -144,8 +144,8 @@ if __name__ == "__main__":
         book_description = {
             "title": book_poster['book_title'],
             "autor": book_poster['book_author'],
-            "img_src": f"images/{sanitize_filename(book_poster['book_image_url'].split('/')[-1])}",
-            "book_path": f'/books/{book_name}.txt',
+            "img_src": f"media/images/{sanitize_filename(book_poster['book_image_url'].split('/')[-1])}",
+            "book_path": f'media/books/{book_name}.txt',
             "comments": book_poster['book_comments'],
             "genres": book_poster['book_genre'],
         }
