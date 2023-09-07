@@ -2,7 +2,7 @@
 
 Набор скриптов предназначен для загрузки книг из электронной библиотеки tululu.org и создание веб-сайта.
 Опубликованная версия веб-сайта, созданная в результате использования
-скриптов: https://dzima-g.github.io/parsing_online_library/website/pages/index1.html
+скриптов: https://dzima-g.github.io/parsing_online_library/pages/index1.html
 
 ## Как установить
 
