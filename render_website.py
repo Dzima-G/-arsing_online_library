@@ -40,6 +40,7 @@ def create_parser():
 
 
 if __name__ == '__main__':
+    os.makedirs('pages', exist_ok=True)
     parser = create_parser()
     args = parser.parse_args(sys.argv[1:])
     file_json_path = os.path.join(args.json_path, 'content_books.json')
@@ -52,4 +53,4 @@ if __name__ == '__main__':
 
     server = Server()
     server.watch('template/template.html', on_reload)
-    server.serve(root='pages')
+    server.serve(root='.')
