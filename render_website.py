@@ -1,10 +1,11 @@
+import argparse
 import json
+import os
+import sys
+
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from livereload import Server
 from more_itertools import chunked
-import argparse
-import sys
-import os
 
 NUMBER_BOOKS_PER_PAGE = 10
 
@@ -19,7 +20,10 @@ def on_reload():
     pages = range(1, len(books_desc) + 1)
 
     for page_id, range_books in enumerate(books_desc, 1):
-        rendered_page = template.render(books_desc=range_books, pages=pages, current_page=page_id)
+        rendered_page = template.render(books_desc=range_books,
+                                        pages=pages,
+                                        current_page=page_id
+                                        )
 
         with open(f'pages/index{page_id}.html', 'w', encoding='utf8') as file:
             file.write(rendered_page)
@@ -29,11 +33,13 @@ def create_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=('''\
-Скрипт формирует веб-сайт из скачанных книг с сайта https://tululu.org/
---------------------------------------------------
-Для формирования страниц веб-сайта необходимо указать параметры:
---json_path - путь к файлу content_books.json сформированного скриптом parse_tululu_category.py
-'''))
+            Скрипт формирует веб-сайт из скачанных книг с сайта https://tululu.org/
+            --------------------------------------------------
+            Для формирования страниц веб-сайта необходимо указать параметры:
+            --json_path - путь к файлу content_books.json сформированного скриптом parse_tululu_category.py
+            '''
+                     )
+    )
     parser.add_argument('--json_path', default='', nargs='?',
                         help='Введите путь к файлу content_books.json')
     return parser

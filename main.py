@@ -1,12 +1,13 @@
-import requests
-import os
-from bs4 import BeautifulSoup
-from pathvalidate import sanitize_filepath, sanitize_filename
 import argparse
-import sys
-from urllib.parse import urljoin
 import logging
+import os
+import sys
 import time
+from urllib.parse import urljoin
+
+import requests
+from bs4 import BeautifulSoup
+from pathvalidate import sanitize_filename, sanitize_filepath
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +25,12 @@ def get_book_page(url):
 
 
 def parse_book_page(soup, book_id):
-    book_title, book_author = [i.strip() for i in (soup.find('h1').text.split('   ::   '))]
-    book_image_url = urljoin(f'https://tululu.org/{book_id}',
-                             soup.find('div', class_='bookimage').find('img')['src'])
+    book_title, book_author = [
+        i.strip() for i in (soup.find('h1').text.split('   ::   '))
+    ]
+    book_image_url = urljoin(
+        f'https://tululu.org/{book_id}',
+        soup.find('div', class_='bookimage').find('img')['src'])
     comments_tags = soup.select('.texts .black')
     book_comments = [item_comment.text for item_comment in comments_tags]
     genres_tags = soup.select('span.d_book a')
@@ -86,11 +90,13 @@ def create_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=('''\
-Скрипт скачивает книги с сайта https://tululu.org/
---------------------------------------------------
-Для скачивания необходимо указать параметры:
---start_id - первое значение интервала (id книги)
---end_id - последнее значение интервала (id книги)'''))
+            Скрипт скачивает книги с сайта https://tululu.org/
+            --------------------------------------------------
+            Для скачивания необходимо указать параметры:
+            --start_id - первое значение интервала (id книги)
+            --end_id - последнее значение интервала (id книги)'''
+                     )
+    )
     parser.add_argument('--start_id', default=1, nargs='?', type=int,
                         help='Введите первое значение интервала (id книги)')
     parser.add_argument('--end_id', default=11, nargs='?', type=int,
@@ -100,12 +106,12 @@ def create_parser():
 
 def print_book_poster(sequence_number, book_poster):
     print(f'{sequence_number} Название:', book_poster['book_title'])
-    print(f'  Автор:', book_poster['book_author'])
-    print(f'  Ссылка на обложку книги:', book_poster['book_image_url'])
+    print('  Автор:', book_poster['book_author'])
+    print('  Ссылка на обложку книги:', book_poster['book_image_url'])
 
     if book_poster['book_comments']:
-        print(f'  Комментарии:', *book_poster['book_comments'])
-    print(f'  Жанр книги:', *book_poster['book_genre'])
+        print('  Комментарии:', *book_poster['book_comments'])
+    print('  Жанр книги:', *book_poster['book_genre'])
     print('')
 
 
@@ -126,7 +132,8 @@ if __name__ == '__main__':
             book_page = get_book_page(page_url)
             soup = BeautifulSoup(book_page.text, 'lxml')
             book_poster = parse_book_page(soup, book_id)
-            book_name = f'{sequence_number}. {book_poster["book_title"]}'.replace(' ', '_')
+            book_name = (f'{sequence_number}. '
+                         f'{book_poster["book_title"]}').replace(' ', '_')
             download_txt(book_id, book_name)
             download_image(book_poster['book_image_url'])
         except BookError:
@@ -136,7 +143,8 @@ if __name__ == '__main__':
             print(error, file=sys.stderr)
             continue
         except requests.exceptions.ConnectionError:
-            logger.warning(f'Не удается подключиться к серверу! Повторное подключение через 10 секунд.')
+            logger.warning('Не удается подключиться к серверу!'
+                           ' Повторное подключение через 10 секунд.')
             time.sleep(10)
             continue
         print_book_poster(sequence_number, book_poster)
